@@ -1,5 +1,6 @@
 "use strict";
 const bcrypt = require("bcrypt");
+const { v4: uuidv4 } = require("uuid");
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
@@ -11,6 +12,7 @@ module.exports = {
       "users",
       [
         {
+          id: uuidv4(),
           username: "admin",
           email: "admin@plastikhb.store",
           password: hashedPassword,
