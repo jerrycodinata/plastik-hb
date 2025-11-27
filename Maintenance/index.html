@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plastik HB - Under Maintenance</title>
+    <style>
+        :root {
+            --primary-color: #1976D2;
+            /* Vuetify default blue, can be adjusted */
+            --text-color: #333333;
+            --bg-color: #f5f5f5;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .container {
+            text-align: center;
+            padding: 2rem;
+            max-width: 600px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            margin: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--text-color);
+            margin-bottom: 0.5rem;
+            letter-spacing: 1px;
+        }
+
+        .tagline {
+            font-size: 0.875rem;
+            color: #666;
+            margin-bottom: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--text-color);
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: #555;
+            margin-bottom: 2rem;
+        }
+
+        .illustration {
+            margin-bottom: 2rem;
+        }
+
+        /* Simple CSS Gear Animation */
+        .gear {
+            display: inline-block;
+            width: 80px;
+            height: 80px;
+            background: #ddd;
+            border-radius: 50%;
+            position: relative;
+            border: 10px solid var(--primary-color);
+            box-sizing: border-box;
+            animation: spin 4s linear infinite;
+        }
+
+        .gear::before,
+        .gear::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--primary-color);
+        }
+
+        .gear::before {
+            width: 100px;
+            height: 20px;
+        }
+
+        .gear::after {
+            width: 20px;
+            height: 100px;
+        }
+
+        .gear-inner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            background: white;
+            border-radius: 50%;
+            z-index: 2;
+        }
+
+        .gear-teeth {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(45deg);
+            width: 100px;
+            height: 20px;
+            background: var(--primary-color);
+        }
+
+        .gear-teeth-2 {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            width: 100px;
+            height: 20px;
+            background: var(--primary-color);
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .contact-btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background-color: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .contact-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+        }
+
+        /* Background decoration */
+        .bg-circle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(25, 118, 210, 0.05);
+            z-index: 0;
+        }
+
+        .c1 {
+            width: 300px;
+            height: 300px;
+            top: -100px;
+            left: -100px;
+        }
+
+        .c2 {
+            width: 400px;
+            height: 400px;
+            bottom: -150px;
+            right: -150px;
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .container {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="bg-circle c1"></div>
+    <div class="bg-circle c2"></div>
+
+    <div class="container">
+        <div class="logo">PLASTIK HB</div>
+        <div class="tagline">Solusi Plastik Terbaik</div>
+
+        <div class="illustration">
+            <div class="gear">
+                <div class="gear-teeth"></div>
+                <div class="gear-teeth-2"></div>
+                <div class="gear-inner"></div>
+            </div>
+        </div>
+
+        <h1>We'll be back soon!</h1>
+        <p>
+            Sorry for the inconvenience but we're performing some maintenance at the moment.
+            We'll be back online shortly!
+        </p>
+
+        <!-- Optional: Add a contact button if needed, or just remove -->
+        <!-- <a href="mailto:info@plastikhb.com" class="contact-btn">Contact Us</a> -->
+    </div>
+
+</body>
+
+</html>

@@ -64,6 +64,10 @@ app.get('/', (req, res) => {
     res.send('Backend is running!');
 });
 
+app.get('/api/health', (req, res) => {
+    res.status(200).send({ status: 'OK', uptime: process.uptime() });
+});
+
 app.use('/api/authentication', authenticationRouter);
 app.use('/api/pages', pageRouter);
 app.use('/api/contact', contactRouter);
