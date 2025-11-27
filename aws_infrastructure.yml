@@ -1,9 +1,11 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: >
-  AWS CloudFormation Template Modern (SSM Based).
-  - Tanpa SSH Port 22.
-  - Full Access via AWS Session Manager.
-  - Termasuk NAT Gateway untuk Private Subnet Internet Access.
+  AWS CloudFormation Template Final - Fullstack Vue + Node.js + PostgreSQL.
+  - Setup Frontend (Vue/Apache) di Public Subnet.
+  - Setup Backend (Node/PM2) di Private Subnet (Port 5000).
+  - Setup Database (PostgreSQL) di Private Subnet (Port 5432).
+  - Load Balancer Routing (/api ke Backend, sisa ke Frontend).
+  - Auto Swap 2GB di semua instance.
 
 Parameters:
   VpcCidr:
@@ -46,7 +48,6 @@ Resources:
       InternetGatewayId: !Ref InternetGateway
       VpcId: !Ref MyVPC
 
-  # NAT Gateway (Wajib untuk SSM di Private Subnet)
   NatGatewayEIP:
     Type: AWS::EC2::EIP
     Properties:
@@ -144,7 +145,6 @@ Resources:
         - Key: Name
           Value: Private-RT
 
-  # Route Private ke NAT Gateway (Supaya bisa connect ke SSM)
   PrivateRoute:
     Type: AWS::EC2::Route
     Properties:
@@ -164,11 +164,11 @@ Resources:
       SubnetId: !Ref PrivateSubnet2
       RouteTableId: !Ref PrivateRouteTable
 
-  # ================= SECURITY GROUPS (NO SSH) =================
+  # ================= SECURITY GROUPS =================
   SecurityGroupFrontend:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Allow HTTP only (No SSH needed)
+      GroupDescription: Allow HTTP for Frontend
       VpcId: !Ref MyVPC
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -178,36 +178,6 @@ Resources:
       Tags:
         - Key: Name
           Value: SG-Frontend
-
-  SecurityGroupBackend:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Allow backend to connect to DB
-      VpcId: !Ref MyVPC
-      SecurityGroupIngress:
-        # Hanya terima MySQL (buat tes) dan HTTP (kalau nanti perlu antar service)
-        # Tidak perlu inbound port untuk SSM
-        - IpProtocol: tcp
-          FromPort: 3306
-          ToPort: 3306
-          SourceSecurityGroupId: !Ref SecurityGroupFrontend
-      Tags:
-        - Key: Name
-          Value: SG-Backend
-
-  SecurityGroupDB:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Allow MySQL access from backend only
-      VpcId: !Ref MyVPC
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 3306
-          ToPort: 3306
-          SourceSecurityGroupId: !Ref SecurityGroupBackend
-      Tags:
-        - Key: Name
-          Value: SG-DB
 
   SecurityGroupALB:
     Type: AWS::EC2::SecurityGroup
@@ -223,8 +193,37 @@ Resources:
         - Key: Name
           Value: SG-ALB
 
-  # ================= IAM ROLE (SSM ENABLED) =================
-  # Digabung: Akses S3 + Akses SSM Session Manager
+  SecurityGroupBackend:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow traffic from ALB to Backend Port 5000
+      VpcId: !Ref MyVPC
+      SecurityGroupIngress:
+        # UPDATE: Allow Port 5000 dari ALB
+        - IpProtocol: tcp
+          FromPort: 5000
+          ToPort: 5000
+          SourceSecurityGroupId: !Ref SecurityGroupALB
+      Tags:
+        - Key: Name
+          Value: SG-Backend
+
+  SecurityGroupDB:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow PostgreSQL access from backend only
+      VpcId: !Ref MyVPC
+      SecurityGroupIngress:
+        # UPDATE: Ganti ke Port Postgres (5432)
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId: !Ref SecurityGroupBackend
+      Tags:
+        - Key: Name
+          Value: SG-DB
+
+  # ================= IAM ROLE =================
   SSMAndS3Role:
     Type: AWS::IAM::Role
     Properties:
@@ -236,7 +235,6 @@ Resources:
               Service: ec2.amazonaws.com
             Action: sts:AssumeRole
       Path: /
-      # POLICY AJAIB YANG BIKIN SSM JALAN:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
       Policies:
@@ -249,11 +247,10 @@ Resources:
                   - s3:GetObject
                   - s3:PutObject
                   - s3:DeleteObject
-                Resource: !Sub "${S3Bucket.Arn}/*"
-              - Effect: Allow
-                Action:
                   - s3:ListBucket
-                Resource: !GetAtt S3Bucket.Arn
+                Resource:
+                  - !Sub "${S3Bucket.Arn}"
+                  - !Sub "${S3Bucket.Arn}/*"
 
   InstanceProfile:
     Type: AWS::IAM::InstanceProfile
@@ -268,7 +265,6 @@ Resources:
     Properties:
       ImageId: !Ref LatestUbuntuAmi
       InstanceType: !Ref InstanceType
-      # KeyName DIHAPUS
       SubnetId: !Ref PublicSubnet1
       SecurityGroupIds:
         - !Ref SecurityGroupFrontend
@@ -279,11 +275,19 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
+          # 1. Swap Setup (2GB)
+          fallocate -l 2G /swapfile
+          chmod 600 /swapfile
+          mkswap /swapfile
+          swapon /swapfile
+          echo '/swapfile none swap sw 0 0' | tee -a /etc/fstab
+
+          # 2. Apache Setup
           apt update -y
-          apt install -y apache2
+          apt install -y apache2 zip unzip
           systemctl enable apache2
           systemctl start apache2
-          echo "<h1>Welcome to Frontend-1 via ALB</h1>" > /var/www/html/index.html
+          echo "<h1>Frontend-1 Ready (Deploy Vue Here)</h1>" > /var/www/html/index.html
 
   FrontendInstance2:
     Type: AWS::EC2::Instance
@@ -300,11 +304,19 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
+          # 1. Swap Setup (2GB)
+          fallocate -l 2G /swapfile
+          chmod 600 /swapfile
+          mkswap /swapfile
+          swapon /swapfile
+          echo '/swapfile none swap sw 0 0' | tee -a /etc/fstab
+
+          # 2. Apache Setup
           apt update -y
-          apt install -y apache2
+          apt install -y apache2 zip unzip
           systemctl enable apache2
           systemctl start apache2
-          echo "<h1>Welcome to Frontend-2 via ALB</h1>" > /var/www/html/index.html
+          echo "<h1>Frontend-2 Ready</h1>" > /var/www/html/index.html
 
   BackendInstance:
     Type: AWS::EC2::Instance
@@ -321,9 +333,19 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
+          # 1. Swap Setup (2GB) - Wajib buat npm install
+          fallocate -l 2G /swapfile
+          chmod 600 /swapfile
+          mkswap /swapfile
+          swapon /swapfile
+          echo '/swapfile none swap sw 0 0' | tee -a /etc/fstab
+
+          # 2. Install Node.js & Tools
           apt update -y
-          apt install -y mysql-client python3-pymysql
-          # Script test connection python nanti dijalankan manual via SSM atau Logs
+          curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+          apt install -y nodejs
+          npm install -g pm2
+          # Backend siap digunakan (Manual Git Clone)
 
   DatabaseInstance:
     Type: AWS::EC2::Instance
@@ -340,19 +362,34 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
-          apt update -y
-          apt install -y mysql-server
-          systemctl enable mysql
-          systemctl start mysql
-          mysql -e "CREATE DATABASE testdb;"
-          mysql -e "CREATE USER 'root'@'%' IDENTIFIED BY 'My123';"
-          mysql -e "GRANT ALL PRIVILEGES ON testdb.* TO 'root'@'%';"
-          mysql -e "FLUSH PRIVILEGES;"
-          # Penting: Config MySQL supaya listen ke 0.0.0.0 biar bisa dikonek backend
-          sed -i 's/bind-address.*/bind-address = 0.0.0.0/' /etc/mysql/mysql.conf.d/mysqld.cnf
-          systemctl restart mysql
+          # 1. Swap Setup (2GB)
+          fallocate -l 2G /swapfile
+          chmod 600 /swapfile
+          mkswap /swapfile
+          swapon /swapfile
+          echo '/swapfile none swap sw 0 0' | tee -a /etc/fstab
 
-  # ================= LOAD BALANCER =================
+          # 2. Install PostgreSQL (UPDATE dari MySQL)
+          apt update -y
+          apt install -y postgresql postgresql-contrib
+
+          # 3. Config Listen Address (Allow Remote)
+          # Cari file config (asumsi versi 14/16, pake wildcard buat cari path)
+          CONF_FILE=$(find /etc/postgresql -name postgresql.conf)
+          HBA_FILE=$(find /etc/postgresql -name pg_hba.conf)
+
+          # Ubah listen_addresses = '*'
+          sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/" $CONF_FILE
+
+          # Ubah pg_hba.conf (Allow MD5 dari mana saja - aman krn dilindungi Security Group)
+          echo "host    all             all             0.0.0.0/0               md5" >> $HBA_FILE
+
+          # 4. Restart Postgres
+          systemctl restart postgresql
+
+          # Note: User database & DB nya dibuat manual via SSM psql
+
+  # ================= LOAD BALANCER & ROUTING =================
   FrontendTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
@@ -361,13 +398,29 @@ Resources:
       Port: 80
       VpcId: !Ref MyVPC
       TargetType: instance
-      HealthCheckProtocol: HTTP
       HealthCheckPath: /
       Targets:
         - Id: !Ref FrontendInstance1
           Port: 80
-        - Id: !Ref FrontendInstance2
-          Port: 80
+        # FrontendInstance2 sementara dikomen di target group biar traffic ke 1 dulu
+        # - Id: !Ref FrontendInstance2
+        #   Port: 80
+
+  # UPDATE: Target Group buat Backend Port 5000
+  BackendTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: backend-target-group
+      Protocol: HTTP
+      Port: 5000
+      VpcId: !Ref MyVPC
+      TargetType: instance
+      HealthCheckPath: /
+      Matcher:
+        HttpCode: 200-499
+      Targets:
+        - Id: !Ref BackendInstance
+          Port: 5000
 
   AppLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
@@ -386,12 +439,25 @@ Resources:
   ALBListenerHTTP:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
-      DefaultActions:
-        - Type: forward
-          TargetGroupArn: !Ref FrontendTargetGroup
       LoadBalancerArn: !Ref AppLoadBalancer
       Port: 80
       Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref FrontendTargetGroup
+
+  # UPDATE: Rule buat belokin /api/* ke Backend
+  ALBRuleApi:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref ALBListenerHTTP
+      Priority: 1
+      Conditions:
+        - Field: path-pattern
+          Values: [/api/*]
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref BackendTargetGroup
 
   # ================= S3 BUCKET =================
   S3Bucket:
@@ -404,7 +470,6 @@ Resources:
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
 
-  # Endpoint S3 (Optional krn udah ada NAT Gateway, tapi bagus buat cost saving)
   S3GatewayEndpoint:
     Type: AWS::EC2::VPCEndpoint
     Properties:

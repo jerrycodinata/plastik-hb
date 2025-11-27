@@ -1,0 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const pageController_1 = require("../controllers/pageController");
+const controllerWrapper_1 = require("../utils/controllerWrapper");
+const pageRouter = (0, express_1.Router)();
+pageRouter.get('/:slug', (0, controllerWrapper_1.controllerWrapper)(pageController_1.getPage));
+pageRouter.put('/homepage', (0, controllerWrapper_1.controllerWrapper)(pageController_1.updateHomepage));
+pageRouter.put('/tentang-kami', (0, controllerWrapper_1.controllerWrapper)(pageController_1.updateAboutPage));
+exports.default = pageRouter;

@@ -1,21 +1,25 @@
 // Plastik-HB-BE/middleware/uploadImageMiddleware.ts
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs';
 import { Request } from 'express';
+import { S3Client } from '@aws-sdk/client-s3';
+import multerS3 from 'multer-s3';
+import dotenv from 'dotenv';
 
-// Ensure upload directory exists
-const uploadDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+dotenv.config();
+
+const s3 = new S3Client({
+  region: process.env.AWS_REGION,
+});
 
 // Storage configuration
-const storage = multer.diskStorage({
-  destination: (req: Request, file: Express.Multer.File, cb) => {
-    cb(null, uploadDir); // Simpan di folder uploads/products
+const storage = multerS3({
+  s3: s3,
+  bucket: process.env.AWS_BUCKET_NAME || '',
+  metadata: function (req, file, cb) {
+    cb(null, { fieldName: file.fieldname });
   },
-  filename: (req: Request, file: Express.Multer.File, cb) => {
+  key: function (req, file, cb) {
     // Generate unique filename
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const ext = path.extname(file.originalname);
