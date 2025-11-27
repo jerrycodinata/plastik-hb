@@ -136,13 +136,13 @@ const trustedByFileInputRefs = ref<(HTMLInputElement | null)[]>([]);
 
 // Computed properties
 const selectedProductIds = computed(() =>
-  featuredProducts.value.map((p) => p.id),
+  featuredProducts.value.map((p) => p.id)
 );
 
 const availableProducts = computed(() =>
   catalogProducts.value.filter(
-    (product) => !selectedProductIds.value.includes(product.id),
-  ),
+    (product) => !selectedProductIds.value.includes(product.id)
+  )
 );
 
 // Product search for selection dialog
@@ -154,7 +154,7 @@ const filteredAvailableProducts = computed(() => {
       product.name.toLowerCase().includes(productSearch.value.toLowerCase()) ||
       product.description
         ?.toLowerCase()
-        .includes(productSearch.value.toLowerCase()),
+        .includes(productSearch.value.toLowerCase())
   );
 });
 
@@ -176,7 +176,7 @@ async function fetchFeatured() {
 const showAlert = (
   type: "success" | "error",
   title: string,
-  message: string,
+  message: string
 ) => {
   alertType.value = type;
   alertTitle.value = title;
@@ -197,7 +197,7 @@ watch(
   (val) => {
     // Accept both BANNER and BANNERS for section type
     const arr = val?.sections.find(
-      (s) => s.type === "BANNERS" || s.type === "BANNER",
+      (s) => s.type === "BANNERS" || s.type === "BANNER"
     )?.data.banners;
     banners.value = arr ? JSON.parse(JSON.stringify(arr)) : [];
     // Always show at least one banner form
@@ -212,7 +212,7 @@ watch(
       });
     }
   },
-  { immediate: true },
+  { immediate: true }
 );
 
 // Automatically sync banners to pageData.sections[0] when they change
@@ -226,11 +226,11 @@ watch(
       pageData.value.sections[0].data
     ) {
       pageData.value.sections[0].data.banners = JSON.parse(
-        JSON.stringify(newBanners),
+        JSON.stringify(newBanners)
       );
     }
   },
-  { deep: true },
+  { deep: true }
 );
 
 // Update pageData banners before save
@@ -271,7 +271,7 @@ watch(
       .achievements;
     achievements.value = arr ? JSON.parse(JSON.stringify(arr)) : [];
   },
-  { immediate: true },
+  { immediate: true }
 );
 
 // Automatically sync banners and achievements to pageData.sections when they change
@@ -285,22 +285,22 @@ watch(
       pageData.value.sections[1].data
     ) {
       pageData.value.sections[1].data.achievements = JSON.parse(
-        JSON.stringify(newAchievements),
+        JSON.stringify(newAchievements)
       );
     }
   },
-  { deep: true },
+  { deep: true }
 );
 
 // Update pageData achievements before save
 const syncAchievementsToPageData = () => {
   if (pageData.value) {
     const section = pageData.value.sections.find(
-      (s) => s.type === "ACHIEVEMENTS",
+      (s) => s.type === "ACHIEVEMENTS"
     );
     if (section)
       section.data.achievements = JSON.parse(
-        JSON.stringify(achievements.value),
+        JSON.stringify(achievements.value)
       );
   }
 };
@@ -332,7 +332,7 @@ watch(
       .partners;
     trustedByPartners.value = arr ? JSON.parse(JSON.stringify(arr)) : [];
   },
-  { immediate: true },
+  { immediate: true }
 );
 
 // Automatically sync trustedByPartners to pageData.sections when they change
@@ -341,13 +341,13 @@ watch(
   (newPartners) => {
     if (pageData.value) {
       const section = pageData.value.sections.find(
-        (s) => s.type === "TRUSTEDBY",
+        (s) => s.type === "TRUSTEDBY"
       );
       if (section)
         section.data.partners = JSON.parse(JSON.stringify(newPartners));
     }
   },
-  { deep: true },
+  { deep: true }
 );
 
 // Trusted By Editor functions
@@ -387,7 +387,7 @@ const onTrustedByDrop = (index: number) => {
   if (dragTrustedByIndex.value !== null && dragTrustedByIndex.value !== index) {
     const moved = trustedByPartners.value.splice(
       dragTrustedByIndex.value,
-      1,
+      1
     )[0];
     trustedByPartners.value.splice(index, 0, moved);
   }
@@ -477,7 +477,7 @@ const saveHomepageData = async () => {
     showAlert(
       "success",
       "Berhasil",
-      "Data halaman utama & produk andalan berhasil disimpan!",
+      "Data halaman utama & produk andalan berhasil disimpan!"
     );
 
     // Refresh only the live preview after successful save
@@ -489,7 +489,7 @@ const saveHomepageData = async () => {
     showAlert(
       "error",
       "Gagal",
-      error?.message || "Gagal menyimpan data halaman utama",
+      error?.message || "Gagal menyimpan data halaman utama"
     );
   } finally {
     saveLoading.value = false;
@@ -530,7 +530,7 @@ const addSelectedProducts = () => {
   const newProducts = catalogProducts.value.filter(
     (p) =>
       selectedProductIdsDialog.value.includes(p.id) &&
-      !featuredProducts.value.some((fp) => fp.id === p.id),
+      !featuredProducts.value.some((fp) => fp.id === p.id)
   );
   featuredProducts.value.push(...newProducts);
   selectedProductIdsDialog.value = [];
@@ -577,7 +577,7 @@ const saveBannerEdit = () => {
 
 // For ImageUploadCard compatibility (accepts both Event and DragEvent)
 const handleBannerEditorImageUploadCard = async (
-  payload: Event | DragEvent,
+  payload: Event | DragEvent
 ) => {
   let file: File | undefined;
   if ("dataTransfer" in payload && payload.dataTransfer?.files?.length) {
@@ -591,7 +591,9 @@ const handleBannerEditorImageUploadCard = async (
   if (file && editingBanner.value) {
     try {
       const imageUrl = await uploadImage(file);
-      editingBanner.value.image = imageBackendUrl + imageUrl;
+      editingBanner.value.image = imageUrl.startsWith("http")
+        ? imageUrl
+        : imageBackendUrl + imageUrl;
     } catch (err) {
       showAlert("error", "Upload Gagal", "Gagal mengupload gambar banner");
     }
@@ -683,7 +685,7 @@ const saveAchievementEdit = () => {
 };
 // For ImageUploadCard compatibility (accepts both Event and DragEvent)
 const handleAchievementEditorImageUploadCard = async (
-  payload: Event | DragEvent,
+  payload: Event | DragEvent
 ) => {
   let file: File | undefined;
   if ("dataTransfer" in payload && payload.dataTransfer?.files?.length) {
@@ -697,7 +699,9 @@ const handleAchievementEditorImageUploadCard = async (
   if (file && editingAchievement.value) {
     try {
       const imageUrl = await uploadImage(file);
-      editingAchievement.value.image = imageBackendUrl + imageUrl;
+      editingAchievement.value.image = imageUrl.startsWith("http")
+        ? imageUrl
+        : imageBackendUrl + imageUrl;
     } catch (err) {
       showAlert("error", "Upload Gagal", "Gagal mengupload gambar achievement");
     }
@@ -744,7 +748,7 @@ const saveTrustedByEdit = () => {
 
 // Add this function to handle both drag and file input events
 const handleTrustedByEditorImageUploadCard = async (
-  payload: Event | DragEvent,
+  payload: Event | DragEvent
 ) => {
   let file: File | undefined;
   if ("dataTransfer" in payload && payload.dataTransfer?.files?.length) {
@@ -758,7 +762,9 @@ const handleTrustedByEditorImageUploadCard = async (
   if (file && editingTrustedBy.value) {
     try {
       const imageUrl = await uploadImage(file);
-      editingTrustedBy.value.image = imageBackendUrl + imageUrl;
+      editingTrustedBy.value.image = imageUrl.startsWith("http")
+        ? imageUrl
+        : imageBackendUrl + imageUrl;
     } catch (err) {
       showAlert("error", "Upload Gagal", "Gagal mengupload logo partner");
     }
@@ -1237,9 +1243,7 @@ onMounted(async () => {
   flex-direction: column;
   justify-content: stretch;
   border-radius: 8px;
-  transition:
-    border-color 0.2s,
-    box-shadow 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .product-select-card .v-row {
